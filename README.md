@@ -1,7 +1,9 @@
 # json-fold.nvim
 Plugin for Neovim that can fold and expand JSON-objects and JSON-arrays.
 
-`
+
+Code voor Lazy
+```lua
 {
     "jvdmeulen/json-fold.nvim",
     config = function()
@@ -15,4 +17,5 @@ Plugin for Neovim that can fold and expand JSON-objects and JSON-arrays.
         vim.api.nvim_set_keymap('n', '<leader>jd', ':JsonExpand<CR>', { noremap = true, silent = true })
     end
 }
-`
+```
+
