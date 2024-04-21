@@ -20,3 +20,6 @@ Code voor Lazy
 }
 ```
 
+
+![Capture 2024-04-21 at 23 09 21](https://github.com/jvdmeulen/json-fold.nvim/assets/129403/672534c6-76e1-4e95-a98c-64de7226a375)
+
