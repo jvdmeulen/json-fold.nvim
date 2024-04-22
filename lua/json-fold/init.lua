@@ -121,8 +121,12 @@ local function process_json(mode)
 	vim.api.nvim_buf_set_text(bufnr, start_row, start_col, end_row, end_col, lines)
 
 	-- Construct and execute a command to reformat the edited region
-	local command = string.format("normal! %dG%d|%dG=%dG", start_row + 1, start_col, start_row, start_row + #lines)
-	vim.api.nvim_exec(command, false)
+    local indent_start_line = start_row + 1  -- Vim script indexeert regels vanaf 1
+    local indent_end_line = start_row + #lines
+
+    -- re-indent with the Vim command "="
+    vim.cmd(string.format("%d,%dnormal! ==", indent_start_line, indent_end_line))
+
 
 	log_debug( mode  .. " operation done on JSON data.")
 end
