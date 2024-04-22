@@ -4,16 +4,20 @@ local ts_utils = require 'nvim-treesitter.ts_utils'
 -- Module definition
 local M = {}
 
-function M.setup(opts)
-	opts = opts or {}
-
+M.opts = {
 	-- Debug flag, set to 1 to enable debug logging
-	M.debug = opts.debug or 0
+	debug = false
+}
+
+function M.setup(opts)
+	M.opts = vim.tbl_deep_extend('force', M.opts, opts or {})
+	vim.api.nvim_create_user_command('JsonUnfoldFromCursor', function() M.process_json('unfoldfromcursor') end, {nargs = 0})
+	vim.api.nvim_create_user_command('JsonFoldFromCursor', function() M.process_json('foldfromcursor') end, {nargs = 0})
 end
 
 -- Function to log debug messages
 local function log_debug(msg)
-	if M.debug == 1 then
+	if M.opts.debug == true then
 		print(msg)
 	end
 end
@@ -35,7 +39,7 @@ local function get_json_node_at_cursor()
 	return nil
 end
 
--- Function to process JSON data based on a mode (compress or expand)
+-- Function to process JSON data based on a mode (foldfromcursor or unfoldfromcursor)
 local function process_json(mode)
 	local bufnr = vim.api.nvim_get_current_buf() -- Get the current buffer number
 	local node = get_json_node_at_cursor()    -- Get the JSON node at cursor
@@ -48,15 +52,16 @@ local function process_json(mode)
 	local start_row, start_col, end_row, end_col = vim.treesitter.get_node_range(node)
 	-- Extract the text content from the buffer based on the node's position
 	local content = vim.api.nvim_buf_get_text(bufnr, start_row, start_col, end_row, end_col, {})
+	log_debug(string.format("object or array found: \n%s", table.concat(content, "\n")))
 	local json_content = table.concat(content, "\n") -- Combine lines into a single string
 	local new_content
 
 	-- Determine action based on mode
-	if mode == 'compress' then
-		-- Compress JSON using 'jq'
+	if mode == 'foldfromcursor' then
+		-- FoldFromCusor JSON using 'jq'
 		new_content = vim.fn.system("echo " .. vim.fn.shellescape(json_content) .. " | jq -c .")
-	elseif mode == 'expand' then
-		-- Expand JSON using 'jq'
+	elseif mode == 'unfoldfromcursor' then
+		-- UnfoldFromCursor JSON using 'jq'
 		new_content = vim.fn.system("echo " .. vim.fn.shellescape(json_content) .. " | jq .")
 	else
 		log_debug("Invalid modus given: " .. mode)
