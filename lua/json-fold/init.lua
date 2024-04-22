@@ -13,6 +13,9 @@ function M.setup(opts)
 	M.opts = vim.tbl_deep_extend('force', M.opts, opts or {})
 	vim.api.nvim_create_user_command('JsonUnfoldFromCursor', function() M.process_json('unfoldfromcursor') end, {nargs = 0})
 	vim.api.nvim_create_user_command('JsonFoldFromCursor', function() M.process_json('foldfromcursor') end, {nargs = 0})
+
+	vim.api.nvim_create_user_command('JsonMaxUnfoldFromCursor', function() M.process_json('maxunfoldfromcursor') end, {nargs = 0})
+	vim.api.nvim_create_user_command('JsonMaxFoldFromCursor', function() M.process_json('maxfoldfromcursor') end, {nargs = 0})
 end
 
 -- Function to log debug messages
@@ -22,27 +25,61 @@ local function log_debug(msg)
 	end
 end
 
--- Function to retrieve a JSON node at the cursor position
-local function get_json_node_at_cursor()
-	local cursor_node = ts_utils.get_node_at_cursor()
-	if not cursor_node then return nil end -- Return nil if no node at cursor
+local function get_json_node(cursor_mode)
+    local cursor_node = ts_utils.get_node_at_cursor()
+    if not cursor_node then return nil end -- Return nil if no node at cursor
 
-	while cursor_node do
-		local type = cursor_node:type()
-		-- Check if the node type is 'object' or 'array'
-		if type == 'object' or type == 'array' then
-			return cursor_node
-		end
-		cursor_node = cursor_node:parent() -- Move to parent node
-	end
+    local farthest_node = nil
+    local current_depth = 0
+    local max_depth = 0
 
-	return nil
+    while cursor_node do
+        local type = cursor_node:type()
+        -- check if the nodetype 'object' or 'array' is
+        if type == 'object' or type == 'array' then
+            if cursor_mode == "fromCursor" then
+                return cursor_node
+            elseif cursor_mode == "maxFromCursor" then
+                -- Keep track of the depth for maxFromCursor
+                if current_depth > max_depth then
+                    max_depth = current_depth
+                    farthest_node = cursor_node
+                end
+            end
+        end
+		-- Go to the upper node en increase the depthcounter
+        cursor_node = cursor_node:parent()
+        current_depth = current_depth + 1
+    end
+
+    if cursor_mode == "maxFromCursor" then
+        return farthest_node
+    end
+
+    return nil
 end
+
+
+local function handle_action(action)
+    local actions = {
+        foldfromcursor = function() return get_json_node("fromCursor") end,
+        unfoldfromcursor = function() return get_json_node("fromCursor") end,
+        maxfoldfromcursor = function() return get_json_node("maxFromCursor") end,
+        maxunfoldfromcursor = function() return get_json_node("maxFromCursor") end,
+    }
+
+    if actions[action] then
+        return actions[action]()
+    else
+        error("Unknown action: " .. action)
+    end
+end
+
 
 -- Function to process JSON data based on a mode (foldfromcursor or unfoldfromcursor)
 local function process_json(mode)
 	local bufnr = vim.api.nvim_get_current_buf() -- Get the current buffer number
-	local node = get_json_node_at_cursor()    -- Get the JSON node at cursor
+	local node = handle_action(mode)    -- Get the JSON node at cursor
 	if not node then
 		log_debug("No valid JSON node found near the cursor")
 		return
@@ -57,11 +94,11 @@ local function process_json(mode)
 	local new_content
 
 	-- Determine action based on mode
-	if mode == 'foldfromcursor' then
-		-- FoldFromCusor JSON using 'jq'
+	if mode == 'foldfromcursor' or mode == 'maxfoldfromcursor' then
+		-- Fold JSON using 'jq'
 		new_content = vim.fn.system("echo " .. vim.fn.shellescape(json_content) .. " | jq -c .")
-	elseif mode == 'unfoldfromcursor' then
-		-- UnfoldFromCursor JSON using 'jq'
+	elseif mode == 'unfoldfromcursor' or mode == 'maxunfoldfromcursor' then
+		-- Unfold JSON using 'jq'
 		new_content = vim.fn.system("echo " .. vim.fn.shellescape(json_content) .. " | jq .")
 	else
 		log_debug("Invalid modus given: " .. mode)

@@ -8,15 +8,21 @@ Code voor Lazy
     config = function()
         require('json-fold').setup()
 
-        -- Keybindings for normal mode
+        -- keybinding for the min (un-)fold actions
         vim.api.nvim_set_keymap('n', '<leader>jc', ':JsonFoldFromCursor<CR>', { noremap = true, silent = true })
         vim.api.nvim_set_keymap('n', '<leader>jd', ':JsonUnfoldFromCursor<CR>', { noremap = true, silent = true })
-    end
+
+        -- keybinding for the max (un-)fold actions
+        vim.api.nvim_set_keymap('n', '<leader>jC', ':JsonMaxFoldFromCursor<CR>', { noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '<leader>jD', ':JsonMaxUnfoldFromCursor<CR>', { noremap = true, silent = true })
+ end
 }
 ```
 After the setup there are two commands you can assign
 * :JsonFoldFromCursor
 * :JsonUnfoldFromCursor
+* :JsonMaxFoldFromCursor
+* :JsonMaxFoldFromCursor
 
 
 ![A little preview](https://github.com/jvdmeulen/json-fold.nvim/assets/129403/672534c6-76e1-4e95-a98c-64de7226a375)
